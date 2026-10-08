@@ -36,6 +36,8 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+      - name: Print tool versions
+        run: kind version; docker version --format '{{.Server.Version}}'
       - name: Setup kind
         if: ${{ env.USE_EXISTING_CLUSTER != 'true' }}
         run: kind create cluster --image kindest/node:${{ env.KUBERNETES_VERSION }} --wait 300s
@@ -63,6 +65,8 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+      - name: Print tool versions
+        run: kind version; docker version --format '{{.Server.Version}}'
       - name: Setup kind
         if: ${{ env.USE_EXISTING_CLUSTER != 'true' }}
         run: kind create cluster --image kindest/node:${{ env.KUBERNETES_VERSION }} --wait 300s
@@ -90,6 +94,8 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+      - name: Print tool versions
+        run: kind version; docker version --format '{{.Server.Version}}'
       - name: Setup kind
         if: ${{ env.USE_EXISTING_CLUSTER != 'true' }}
         run: kind create cluster --image kindest/node:${{ env.KUBERNETES_VERSION }} --wait 300s
@@ -117,6 +123,8 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+      - name: Print tool versions
+        run: kind version; docker version --format '{{.Server.Version}}'
       - name: Setup kind
         if: ${{ env.USE_EXISTING_CLUSTER != 'true' }}
         run: kind create cluster --image kindest/node:${{ env.KUBERNETES_VERSION }} --wait 300s
