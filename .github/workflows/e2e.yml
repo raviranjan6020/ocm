@@ -77,7 +77,7 @@ jobs:
         mode: [default, hosted, singleton, grpc]
         # Shards run on separate kind clusters because specs share cluster-wide state.
         # "all" runs the whole suite; split by setting shards to [addon, core].
-        shard: [all]
+        shard: [addon, core]
         include:
           - mode: hosted
             make_env: KLUSTERLET_DEPLOY_MODE=SingletonHosted
