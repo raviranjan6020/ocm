@@ -137,6 +137,8 @@ jobs:
             ARGS="${ARGS} --ginkgo.junit-report=${GITHUB_WORKSPACE}/junit.xml"
         env:
           KUBECONFIG: /home/runner/.kube/config
+          # Failed specs and AfterSuite save agent logs here before cleanup removes the agents.
+          E2E_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics/specs
       - name: Collect diagnostics
         if: ${{ failure() }}
         run: |
