@@ -122,7 +122,9 @@ jobs:
           rm images.tar
           chmod +x e2e.test
       - name: Test E2E
-        run: make test-e2e SKIP_IMAGE_BUILD=true SKIP_E2E_BUILD=true ${{ matrix.make_env }}
+        run: |
+          make test-e2e SKIP_IMAGE_BUILD=true SKIP_E2E_BUILD=true ${{ matrix.make_env }} \
+            ARGS="--ginkgo.junit-report=${GITHUB_WORKSPACE}/e2e-result/junit.xml"
         env:
           KUBECONFIG: /home/runner/.kube/config
           # Failed specs and AfterSuite save agent logs here before cleanup removes the agents.
@@ -147,3 +149,32 @@ jobs:
           name: diagnostics-${{ matrix.name }}
           path: diagnostics
           retention-days: 7
+      - name: Save result
+        if: ${{ always() }}
+        run: |
+          mkdir -p e2e-result
+          echo "${{ job.status }}" > e2e-result/status
+      - name: Upload result
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-result-${{ matrix.name }}
+          path: e2e-result
+          retention-days: 7
+
+  # One table for all e2e jobs on the run page, with the failed specs and their errors.
+  # Report only: not meant to be a required check.
+  summary:
+    needs: e2e
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download results
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: e2e-result-*
+          path: e2e-results
+      - name: Write summary
+        run: bash .github/scripts/e2e-summary.sh e2e-results >> "$GITHUB_STEP_SUMMARY"
