@@ -125,3 +125,25 @@ jobs:
         run: make test-e2e SKIP_IMAGE_BUILD=true SKIP_E2E_BUILD=true ${{ matrix.make_env }}
         env:
           KUBECONFIG: /home/runner/.kube/config
+          # Failed specs and AfterSuite save agent logs here before cleanup removes the agents.
+          E2E_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics/specs
+      - name: Collect diagnostics
+        if: ${{ failure() }}
+        run: |
+          mkdir -p diagnostics
+          kind export logs diagnostics/kind || true
+          for res in managedclusters managedclusteraddons clustermanagementaddons manifestworks \
+              placements placementdecisions clustermanagers klusterlets csr; do
+            kubectl get "$res" -A -o yaml > "diagnostics/${res}.yaml" 2>&1 || true
+          done
+          kubectl get pods -A -o wide > diagnostics/pods.txt 2>&1 || true
+          kubectl get events -A --sort-by=.lastTimestamp > diagnostics/events.txt 2>&1 || true
+        env:
+          KUBECONFIG: /home/runner/.kube/config
+      - name: Upload diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: diagnostics-${{ matrix.name }}
+          path: diagnostics
+          retention-days: 7
