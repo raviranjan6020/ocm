@@ -139,7 +139,7 @@ func (c *addOnRegistrationController) syncAddOn(ctx context.Context, syncCtx fac
 
 	installOption := addonInstallOption{
 		AgentRunningOutsideManagedCluster: isAddonRunningOutsideManagedCluster(addOn),
-		InstallationNamespace:             getAddOnInstallationNamespace(addOn),
+		InstallationNamespace:             addonNamespace(ctx, c.managementKubeClient.CoreV1(), c.clusterName, addOn),
 	}
 	configs, err := getRegistrationConfigs(addOnName, c.clusterName, installOption, addOn.Status.Registrations, logger)
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	coordv1client "k8s.io/client-go/kubernetes/typed/coordination/v1"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/clock"
 
@@ -38,6 +39,8 @@ type managedClusterAddOnLeaseController struct {
 	addOnLister           addonlisterv1beta1.ManagedClusterAddOnLister
 	managementLeaseClient coordv1client.CoordinationV1Interface
 	spokeLeaseClient      coordv1client.CoordinationV1Interface
+	// managementNamespaces finds the per-instance hosting namespace of a hosted addon.
+	managementNamespaces corev1client.NamespacesGetter
 }
 
 // NewManagedClusterAddOnLeaseController returns an instance of managedClusterAddOnLeaseController
@@ -46,6 +49,7 @@ func NewManagedClusterAddOnLeaseController(clusterName string,
 	addOnInformer addoninformerv1beta1.ManagedClusterAddOnInformer,
 	managementLeaseClient coordv1client.CoordinationV1Interface,
 	spokeLeaseClient coordv1client.CoordinationV1Interface,
+	managementNamespaces corev1client.NamespacesGetter,
 	resyncInterval time.Duration) factory.Controller {
 	c := &managedClusterAddOnLeaseController{
 		clusterName: clusterName,
@@ -56,6 +60,7 @@ func NewManagedClusterAddOnLeaseController(clusterName string,
 		addOnLister:           addOnInformer.Lister(),
 		managementLeaseClient: managementLeaseClient,
 		spokeLeaseClient:      spokeLeaseClient,
+		managementNamespaces:  managementNamespaces,
 	}
 
 	// TODO We do not add leaser informer to support kubernetes version lower than 1.17. Lease v1 api
@@ -76,7 +81,7 @@ func (c *managedClusterAddOnLeaseController) sync(ctx context.Context, syncCtx f
 		}
 		for _, addOn := range addOns {
 			// enqueue the addon to reconcile
-			syncCtx.Queue().Add(fmt.Sprintf("%s/%s", getAddOnInstallationNamespace(addOn), addOn.Name))
+			syncCtx.Queue().Add(fmt.Sprintf("%s/%s", addonNamespace(ctx, c.managementNamespaces, c.clusterName, addOn), addOn.Name))
 		}
 		return nil
 	}
@@ -188,7 +193,7 @@ func (c *managedClusterAddOnLeaseController) queueKeyFunc(lease runtime.Object) 
 	}
 
 	namespace := accessor.GetNamespace()
-	if namespace != getAddOnInstallationNamespace(addOn) {
+	if namespace != getAddOnInstallationNamespace(addOn) && namespace != hostingNamespaceName(c.clusterName, addOn.Name) {
 		// the lease namesapce is not same with its addon installation namespace, ignore it.
 		return ""
 	}

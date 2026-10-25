@@ -17,6 +17,10 @@ rules:
   resources: ["secrets"]
   verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
 # Allow agent to list addons lease
+# Read the per-instance hosting namespace of a hosted addon to check its owner annotation (enhancement 191).
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get"]
 - apiGroups: ["coordination.k8s.io"]
   resources: ["leases"]
   verbs: ["create", "get", "list", "update", "watch", "patch"]

@@ -173,9 +173,8 @@ func TestRegistrationSync(t *testing.T) {
 				if len(actions) != 0 {
 					t.Errorf("expect 0 actions but got %d", len(actions))
 				}
-				if len(managementActions) != 0 {
-					t.Errorf("expect 0 management actions but got %d", len(managementActions))
-				}
+				// Hosted addons first look up their per-instance hosting namespace.
+				testingcommon.AssertActions(t, managementActions, "get")
 			},
 		},
 		{
@@ -202,10 +201,8 @@ func TestRegistrationSync(t *testing.T) {
 				if len(actions) != 0 {
 					t.Errorf("expect 0 actions but got %d", len(actions))
 				}
-				if len(managementActions) != 1 {
-					t.Errorf("expect 1 management actions but got %d", len(managementActions))
-				}
-				testingcommon.AssertActions(t, managementActions, "delete")
+				// The hosting-namespace lookup, then the stale secret is deleted.
+				testingcommon.AssertActions(t, managementActions, "get", "delete")
 			},
 		},
 		{
@@ -258,9 +255,8 @@ func TestRegistrationSync(t *testing.T) {
 				addOnName: {hash(config2, "", true)},
 			},
 			validateActions: func(t *testing.T, actions, managementActions []clienttesting.Action) {
-				if len(managementActions) != 0 {
-					t.Errorf("expect 0 actions but got %d", len(managementActions))
-				}
+				// Hosted addons first look up their per-instance hosting namespace.
+				testingcommon.AssertActions(t, managementActions, "get")
 				if len(actions) != 1 {
 					t.Errorf("expect 1 management actions but got %d", len(actions))
 				}
