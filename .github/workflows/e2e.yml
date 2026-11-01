@@ -158,10 +158,10 @@ jobs:
           kind export logs diagnostics/kind || true
           for res in managedclusters managedclusteraddons clustermanagementaddons manifestworks \
               placements placementdecisions clustermanagers klusterlets csr; do
-            kubectl get "$res" -A -o yaml > "diagnostics/${res}.yaml" 2>&1 || true
+            kubectl get "$res" -A -o yaml --request-timeout=30s > "diagnostics/${res}.yaml" 2>&1 || true
           done
-          kubectl get pods -A -o wide > diagnostics/pods.txt 2>&1 || true
-          kubectl get events -A --sort-by=.lastTimestamp > diagnostics/events.txt 2>&1 || true
+          kubectl get pods -A -o wide --request-timeout=30s > diagnostics/pods.txt 2>&1 || true
+          kubectl get events -A --sort-by=.lastTimestamp --request-timeout=30s > diagnostics/events.txt 2>&1 || true
         env:
           KUBECONFIG: /home/runner/.kube/config
       - name: Upload diagnostics
