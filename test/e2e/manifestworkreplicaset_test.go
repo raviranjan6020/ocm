@@ -259,6 +259,11 @@ var _ = Describe("Test ManifestWorkReplicaSet", Label("manifestworkreplicaset"),
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		// Fork-only test branch: fails on purpose to check that diagnostics run before this Context's cleanup.
+		It("injected failure, fork only", func() {
+			Expect(clusterNamePrefix).To(Equal("injected failure"))
+		})
+
 		It("Create ManifestWorkReplicaSet and check the created manifestWorks", func() {
 			By(fmt.Sprintf("Create manifestWorkReplicaSet %s", mwReplicaSetName))
 			manifest := workapiv1.Manifest{}
