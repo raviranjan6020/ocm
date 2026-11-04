@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -888,6 +889,41 @@ func TestNameMatch(t *testing.T) {
 			if rst != c.expected {
 				t.Errorf("expected %v, got %v", c.expected, rst)
 			}
+		})
+	}
+}
+
+func TestDeleteAppliedResourcesWithHostingOwner(t *testing.T) {
+	owner := metav1.OwnerReference{APIVersion: "work.open-cluster-management.io/v1", Kind: "AppliedManifestWork", Name: "amw", UID: "a"}
+	gvr := schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles"}
+	clusterRole := func(annotation string) *unstructured.Unstructured {
+		u := testingcommon.NewUnstructured("rbac.authorization.k8s.io/v1", "ClusterRole", "", "proto192", owner)
+		u.SetUID("cr-uid")
+		u.SetAnnotations(map[string]string{hostingAddonAnnotation: annotation})
+		return u
+	}
+	tracked := []workapiv1.AppliedManifestResourceMeta{{Version: "v1", UID: "cr-uid", ResourceIdentifier: workapiv1.ResourceIdentifier{
+		Group: gvr.Group, Resource: gvr.Resource, Name: "proto192"}}}
+
+	cases := []struct {
+		name     string
+		live     string
+		expected string
+		verbs    []string
+	}{
+		{name: "owner still matches: deleted", live: "cluster-a/proto192", expected: "cluster-a/proto192", verbs: []string{"get", "delete"}},
+		{name: "owner annotation changed: kept, only our owner reference removed", live: "cluster-b/proto192",
+			expected: "cluster-a/proto192", verbs: []string{"get", "patch"}},
+		{name: "not enforced: deleted as before", live: "cluster-b/proto192", expected: "", verbs: []string{"get", "delete"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			client := fakedynamic.NewSimpleDynamicClient(runtime.NewScheme(), clusterRole(c.live))
+			_, errs := DeleteAppliedResourcesWithHostingOwner(context.TODO(), tracked, "test", client, owner, c.expected)
+			if len(errs) != 0 {
+				t.Fatalf("errors: %v", errs)
+			}
+			testingcommon.AssertActions(t, client.Actions(), c.verbs...)
 		})
 	}
 }
